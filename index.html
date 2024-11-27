@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Traffic Incidents</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <style>
+       body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(to bottom right, #6c6e6c, #e9cddb); /* Warm dark green to warm pink */
+    overflow: hidden;
+}
+
+
+#chart {
+    position: relative;
+    width: 600px;
+    height: 590px;
+    background: linear-gradient(to bottom right, #a8aba8, #ffffff);
+    border-radius: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+
+/* Optional: add a light green border */
+#chart:hover {
+    border: 2px solid #ffffff; /* Light green border on hover */
+}
+
+
+        .circle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-weight: bold;
+    color: rgb(0, 0, 0);
+    position: absolute;
+    border-radius: 50%;
+    text-transform: capitalize;
+    overflow: hidden;
+    min-width: 80px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);  /* Add shadow here */
+}
+
+.circle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);  /* Darker shadow on hover */
+}
+
+
+        #line-chart {
+            position: absolute;
+            width: 80vw;
+            height: 80vh;
+            top: 10%;
+            left: 10%;
+            z-index: 3;
+            display: none;
+            background-color: rgb(193, 192, 192);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="chart"></div>
+    <div id="line-chart"></div>
+
+    <script>
+        // Prepare data for traffic incidents
+        const trafficData = [
+            { "year_month": "2023-Mar", "accident_name": "بسيط", "count": 5059 },
+            { "year_month": "2023-Mar", "accident_name": "بليغ", "count": 485 },
+            { "year_month": "2023-Mar", "accident_name": "مخالفه", "count": 131 },
+            { "year_month": "2023-Apr", "accident_name": "بسيط", "count": 5790 },
+            { "year_month": "2023-Apr", "accident_name": "بليغ", "count": 616 },
+            { "year_month": "2023-Apr", "accident_name": "مخالفه", "count": 246 },
+            { "year_month": "2024-Mar", "accident_name": "بسيط", "count": 6238 },
+            { "year_month": "2024-Mar", "accident_name": "بليغ", "count": 601 },
+            { "year_month": "2024-Mar", "accident_name": "مخالفه", "count": 309 },
+            { "year_month": "2024-Apr", "accident_name": "بسيط", "count": 3897 },
+            { "year_month": "2024-Apr", "accident_name": "بليغ", "count": 343 },
+            { "year_month": "2024-Apr", "accident_name": "مخالفه", "count": 192 },
+            { "year_month": "2024-Jun", "accident_name": "بسيط", "count": 5224 },
+            { "year_month": "2024-Jun", "accident_name": "بليغ", "count": 409 },
+            { "year_month": "2024-Jun", "accident_name": "مخالفه", "count": 323 },
+            { "year_month": "2024-Jul", "accident_name": "بسيط", "count": 7753 },
+            { "year_month": "2024-Jul", "accident_name": "بليغ", "count": 625 },
+            { "year_month": "2024-Jul", "accident_name": "مخالفه", "count": 515 },
+            { "year_month": "2024-Aug", "accident_name": "بسيط", "count": 7938 },
+            { "year_month": "2024-Aug", "accident_name": "بليغ", "count": 689 },
+            { "year_month": "2024-Aug", "accident_name": "مخالفه", "count": 570 },
+            { "year_month": "2024-Sep", "accident_name": "بسيط", "count": 560 },
+            { "year_month": "2024-Sep", "accident_name": "بليغ", "count": 46 },
+            { "year_month": "2024-Sep", "accident_name": "مخالفه", "count": 39 }
+        ];
+
+        const circleRadius = 120;
+        const centerX = 0;
+        const centerY = 0;
+
+        const maxCount = Math.max(...trafficData.map(d => d.count));
+
+        // Function to hide any currently displayed chart
+        function hideChart() {
+            const chartDiv = document.getElementById('line-chart');
+            chartDiv.style.display = 'none';  // Hide the chart
+        }
+
+        function createCircle(id, color, x, y, count, label, onClickHandler) {
+            const radius = Math.sqrt(count / maxCount) * 200;
+            const circle = document.createElement('div');
+            circle.id = id;
+            circle.className = 'circle';
+            circle.style.width = `${Math.max(radius * 2, 80)}px`;
+            circle.style.height = `${Math.max(radius * 2, 80)}px`;
+            circle.style.backgroundColor = color;
+            circle.style.left = `${x}px`;
+            circle.style.top = `${y}px`;
+            circle.style.fontSize = '14px';
+            circle.innerHTML = label;
+
+            circle.addEventListener('click', onClickHandler);
+            document.getElementById('chart').appendChild(circle);
+            return circle;
+        }
+
+        // Display line chart for Dubai
+        function displayLineChart() {
+            hideChart();  // Hide any existing chart before displaying a new one
+            const lineChartSpec = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "width": 900,
+                "height": 400,
+                "data": { "values": trafficData },
+                "mark": "line",
+                "encoding": {
+                    "x": { "field": "year_month", "type": "ordinal", "title": "Month-Year" },
+                    "y": { "field": "count", "type": "quantitative", "title": "Incident Count" },
+                    "color": { "field": "accident_name", "type": "nominal", "legend": { "title": "Accident Type" } }
+                }
+            };
+
+            const chartDiv = document.getElementById('line-chart');
+            chartDiv.style.display = 'block';
+            vegaEmbed("#line-chart", lineChartSpec).catch(console.error);
+        }
+
+        // Display scatter plot for accident types
+        function displayScatterPlot(accidentType) {
+            hideChart();  // Hide any existing chart before displaying a new one
+            const filteredData = trafficData.filter(d => d.accident_name === accidentType);
+
+            const scatterChartSpec = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "width": 900,
+                "height": 400,
+                "data": { "values": filteredData },
+                "mark": "point",
+                "encoding": {
+                    "x": { "field": "year_month", "type": "ordinal", "title": "Month-Year" },
+                    "y": { "field": "count", "type": "quantitative", "title": "Incident Count" },
+                    "color": { "field": "accident_name", "type": "nominal" }
+                }
+            };
+
+            const chartDiv = document.getElementById('line-chart');
+            chartDiv.style.display = 'block';
+            vegaEmbed("#line-chart", scatterChartSpec).catch(console.error);
+        }
+
+        // Create the main circle (Dubai) positioned at the bottom of the chart
+        const bigCircle = document.createElement('div');
+        bigCircle.style.position = 'absolute';
+        bigCircle.style.borderRadius = '50%';
+        bigCircle.style.width = `${circleRadius * 3}px`;
+        bigCircle.style.height = `${circleRadius * 3}px`;
+        bigCircle.style.backgroundColor = '#e7e7de';  // Soft pink
+        bigCircle.classList.add('circle');
+        bigCircle.innerHTML = "Dubai";
+        bigCircle.style.top = '230px';  // Position the "Dubai" circle closer to the bottom
+        bigCircle.addEventListener('click', displayLineChart); // Display line chart for all data
+        document.getElementById('chart').appendChild(bigCircle);
+
+        // Create smaller accident type circles inside the chart (adjust positions to fit)
+        createCircle('simple', '#cdd2d2', 100, 50, 5059, "بسيط", () => displayScatterPlot('بسيط')); // Soft purple
+        createCircle('severe', '#edd4d5', 250, 50, 485, "بليغ", () => displayScatterPlot('بليغ')); // Very dark blue
+        createCircle('violation', '#7b9799', 50, 200, 131, "مخالفه", () => displayScatterPlot('مخالفه')); // Very dark red
+
+        // Event listener to close the chart when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const chartDiv = document.getElementById('line-chart');
+            const chartArea = document.getElementById('chart');
+            if (!chartDiv.contains(event.target) && !chartArea.contains(event.target)) {
+                hideChart();
+            }
+        });
+    </script>
+</body>
+</html>
